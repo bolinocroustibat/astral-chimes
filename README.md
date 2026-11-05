@@ -1,6 +1,6 @@
 # Astral Chimes
 
-Ring a chime for each new confirmed supernova explosion in the universe. MicroPython project for ESP32 whip. Supernovae come from the [Transient Name Server](https://www.wis-tns.org/).
+Ring a chime for each new confirmed supernova explosion in the universe. MicroPython project for ESP32 chip. Supernovae come from the [Transient Name Server](https://www.wis-tns.org/).
 
 ## Flash the firmware
 
