@@ -1,0 +1,10 @@
+# Secrets
+secrets.py
+
+# Python / MicroPython
+__pycache__/
+*.pyc
+*.mpy
+
+# macOS
+.DS_Store
