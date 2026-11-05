@@ -8,7 +8,7 @@ import wifi
 REST_ANGLE = 0
 STRIKE_ANGLE = 180
 PAUSE = 0.3  # seconds: time spent at the strike position
-STRIKE_GAP = 2  # seconds after each strike, long enough to count them by ear
+STRIKE_GAP = 3  # seconds after each strike, long enough to count them by ear
 CHECK_INTERVAL = 300  # seconds between two checks of the TNS catalog
 MAX_SEEN = 40  # names remembered, must stay above the page size of the URL
 URL = (
