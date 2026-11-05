@@ -4,7 +4,7 @@ from secrets import PASSWORD, SSID
 import network
 
 
-def connect(timeout=20):
+def connect(timeout: int = 20) -> network.WLAN:
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if not wlan.isconnected():
