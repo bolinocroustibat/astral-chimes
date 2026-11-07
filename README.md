@@ -34,6 +34,20 @@ Then copy `main.py`, `wifi.py` and `secrets.py` to the board with [Thonny](https
 mpremote cp main.py wifi.py secrets.py :
 ```
 
+Copying stops the running program. Restart the board so the new `main.py` runs:
+
+```bash
+mpremote reset
+```
+
+To watch its output (Ctrl-] to quit):
+
+```bash
+mpremote repl
+```
+
+Only one program can use the serial port at a time: quit the REPL (and Thonny) before copying again.
+
 ## Test strike
 
 Press the BOOT button (GPIO 0, next to the USB port) to strike both servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
