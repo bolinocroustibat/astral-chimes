@@ -1,4 +1,4 @@
-# Astral Chimes
+# 🔔 Astral Chimes
 
 Ring a chime for each new confirmed supernova explosion in the universe, a second one for each new gravitational wave event, and a third one for each earthquake in Japan. MicroPython project for ESP32 chip. Supernovae come from the [Transient Name Server](https://www.wis-tns.org/), gravitational waves from [GraceDB](https://gracedb.ligo.org/) (LIGO/Virgo/KAGRA), earthquakes from the [USGS](https://earthquake.usgs.gov/).
 
@@ -8,7 +8,7 @@ The earthquake chime is disabled for now (its lines are commented out in `main.p
 
 All catalogs are checked every 5 minutes. The first check after boot only memorizes the current lists, so nothing rings until a new event is published.
 
-## Flash the firmware
+## ⚡ Flash the firmware
 
 Download the latest `.bin` from [MicroPython for ESP32](https://micropython.org/download/ESP32_GENERIC/), find the board's port with `ls /dev/cu.*` (e.g. `/dev/cu.usbserial-0001`), then:
 
@@ -19,7 +19,7 @@ uvx esptool --port /dev/cu.usbserial-0001 --baud 460800 write-flash 0x1000 ESP32
 
 Tested with MicroPython v1.29.0.
 
-## Setup
+## 🔧 Setup
 
 Create `secrets.py` (gitignored):
 
@@ -50,11 +50,11 @@ mpremote repl
 
 Only one program can use the serial port at a time: quit the REPL (and Thonny) before copying again.
 
-## Test strike
+## 🧪 Test strike
 
 Press the BOOT button (GPIO 0, next to the USB port) to strike all servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
 
-## Ring over HTTP
+## 🌐 Ring over HTTP
 
 From any device on the local network, call `/strike` with the servo number (1 = supernova, 2 = gravitational wave) and, optionally, the number of strikes (1 to 5):
 
@@ -67,7 +67,7 @@ If `astral-chimes.local` does not resolve, use the IP address printed by `wifi o
 
 Calls are answered between two checks of the catalogs: during a check or a strike, they wait a few seconds. There is no authentication, so anyone on the local network can ring.
 
-## TODO
+## 📝 TODO
 
 Ring a third chime for another kind of event from TNS. Ideas, with rough orders of magnitude (not checked against TNS):
 
