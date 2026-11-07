@@ -1,7 +1,5 @@
 """Earthquakes in Japan, from the USGS catalog."""
 
-import json
-
 import urequests
 
 from wifi import HEADERS
@@ -22,7 +20,9 @@ def fetch() -> list[str]:
     try:
         if r.status_code != 200:
             raise ValueError(f"http {r.status_code}")
-        data = json.load(r.raw)  # parsed from the stream, the raw text is never kept
+        # json.load(r.raw) fails on an HTTPS stream ("stream operation not
+        # supported"), so the whole answer is read first, then parsed.
+        data = r.json()
         if "features" not in data:
             raise ValueError("unexpected response")
         return [feature["id"] for feature in data["features"]]
