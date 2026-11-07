@@ -4,7 +4,7 @@ Ring a chime for each new confirmed supernova explosion in the universe, a secon
 
 Only significant, non-retracted gravitational wave alerts ring. There are about 1 to 3 per week while the detectors are observing, and none between observing runs.
 
-Earthquakes ring from magnitude 4, about 2 per day. The USGS lists no smaller ones in Japan, and publishes them with some delay (often 15 to 30 minutes): this is a chime, not an early warning.
+The earthquake chime is disabled for now (its lines are commented out in `main.py`). Once enabled, earthquakes ring from magnitude 4, about 2 per day. The USGS lists no smaller ones in Japan, and publishes them with some delay (often 15 to 30 minutes): this is a chime, not an early warning.
 
 All catalogs are checked every 5 minutes. The first check after boot only memorizes the current lists, so nothing rings until a new event is published.
 
@@ -52,7 +52,7 @@ Only one program can use the serial port at a time: quit the REPL (and Thonny) b
 
 ## Test strike
 
-Press the BOOT button (GPIO 0, next to the USB port) to strike all three servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
+Press the BOOT button (GPIO 0, next to the USB port) to strike all servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
 
 ## TODO
 

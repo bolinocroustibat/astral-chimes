@@ -37,7 +37,9 @@ HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
 
 servo1 = PWM(Pin(13), freq=50)
 servo2 = PWM(Pin(27), freq=50)
-servo3 = PWM(Pin(26), freq=50)
+# Earthquake chime, disabled for now. To enable it, uncomment the lines that
+# use servo3 or seen_earthquakes, and the TEST_GAP sleep just before strike(servo3).
+# servo3 = PWM(Pin(26), freq=50)
 test_button = Pin(0, Pin.IN, Pin.PULL_UP)  # BOOT button, reads 0 when pressed
 
 
@@ -68,8 +70,8 @@ def wait_and_watch_button(seconds: int) -> None:
             strike(servo1)
             time.sleep(TEST_GAP)
             strike(servo2)
-            time.sleep(TEST_GAP)
-            strike(servo3)
+            # time.sleep(TEST_GAP)
+            # strike(servo3)
         time.sleep_ms(50)
 
 
@@ -183,13 +185,13 @@ def check(label: str, fetch, seen: list[str] | None, servo: PWM) -> list[str] | 
 
 set_angle(servo1, REST_ANGLE)
 set_angle(servo2, REST_ANGLE)
-set_angle(servo3, REST_ANGLE)
+# set_angle(servo3, REST_ANGLE)
 time.sleep(1)
 
 wlan = wifi.connect()
 seen_supernovae = None
 seen_gravitational_waves = None
-seen_earthquakes = None
+# seen_earthquakes = None
 
 while True:
     if not wlan.isconnected():
@@ -198,5 +200,5 @@ while True:
     seen_gravitational_waves = check(
         "gravitational wave", fetch_gravitational_waves, seen_gravitational_waves, servo2
     )
-    seen_earthquakes = check("earthquake", fetch_earthquakes, seen_earthquakes, servo3)
+    # seen_earthquakes = check("earthquake", fetch_earthquakes, seen_earthquakes, servo3)
     wait_and_watch_button(CHECK_INTERVAL)
