@@ -9,6 +9,8 @@ REST_ANGLE = 0
 STRIKE_ANGLE = 180
 PAUSE = 0.3  # seconds: time spent at the strike position
 STRIKE_GAP = 3  # seconds after each strike, long enough to count them by ear
+TEST_GAP = 5  # extra seconds between the two servos on a test strike
+TEST_DELAY = 2  # seconds between the button press and the first test strike
 CHECK_INTERVAL = 300  # seconds between two checks of the TNS catalog
 MAX_SEEN = 40  # names remembered, must stay above the page size of the URL
 URL = (
@@ -19,6 +21,7 @@ HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
 
 servo1 = PWM(Pin(13), freq=50)
 servo2 = PWM(Pin(27), freq=50)
+test_button = Pin(0, Pin.IN, Pin.PULL_UP)  # BOOT button, reads 0 when pressed
 
 
 def set_angle(servo: PWM, angle: int) -> None:
@@ -32,6 +35,23 @@ def strike(servo: PWM, times: int = 1) -> None:
         time.sleep(PAUSE)
         set_angle(servo, REST_ANGLE)
         time.sleep(STRIKE_GAP)
+
+
+def wait_and_watch_button(seconds: int) -> None:
+    """Sleep for the given time, striking both servos when the test button is pressed.
+
+    The button is polled, not handled by an interrupt: an interrupt handler
+    must not sleep, and the strike needs to.
+    """
+    deadline = time.ticks_add(time.ticks_ms(), seconds * 1000)
+    while time.ticks_diff(deadline, time.ticks_ms()) > 0:
+        if test_button.value() == 0:
+            print("test strike")
+            time.sleep(TEST_DELAY)
+            strike(servo1)
+            time.sleep(TEST_GAP)
+            strike(servo2)
+        time.sleep_ms(50)
 
 
 def read_lines(stream):
@@ -118,4 +138,4 @@ while True:
                 strike(servo1)
     except Exception as e:
         print("error:", e)
-    time.sleep(CHECK_INTERVAL)
+    wait_and_watch_button(CHECK_INTERVAL)
