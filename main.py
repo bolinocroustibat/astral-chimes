@@ -1,5 +1,6 @@
 import gc
 import json
+import socket
 import time
 
 import urequests
@@ -34,6 +35,8 @@ EARTHQUAKE_URL = (
     f"&minmagnitude={EARTHQUAKE_MIN_MAGNITUDE}&limit=5&orderby=time"
 )
 HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
+HTTP_PORT = 80
+MAX_HTTP_TIMES = 5  # strikes allowed in one HTTP call
 
 servo1 = PWM(Pin(13), freq=50)
 servo2 = PWM(Pin(27), freq=50)
@@ -41,6 +44,11 @@ servo2 = PWM(Pin(27), freq=50)
 # use servo3 or seen_earthquakes, and the TEST_GAP sleep just before strike(servo3).
 # servo3 = PWM(Pin(26), freq=50)
 test_button = Pin(0, Pin.IN, Pin.PULL_UP)  # BOOT button, reads 0 when pressed
+SERVOS = {  # numbers used by the HTTP call
+    1: servo1,
+    2: servo2,
+    # 3: servo3,
+}
 
 
 def set_angle(servo: PWM, angle: int) -> None:
@@ -56,14 +64,80 @@ def strike(servo: PWM, times: int = 1) -> None:
         time.sleep(STRIKE_GAP)
 
 
-def wait_and_watch_button(seconds: int) -> None:
-    """Sleep for the given time, striking all servos when the test button is pressed.
+def parse_strike(request_line: str) -> tuple[str, int | None, int]:
+    """Read a request line like "GET /strike?servo=1&times=2 HTTP/1.1".
 
-    The button is polled, not handled by an interrupt:
+    Return the HTTP status line, then the servo number and the number of
+    strikes. The servo number is None when nothing should ring.
+    """
+    parts = request_line.split()
+    if len(parts) < 2 or parts[0] != "GET":
+        return "404 Not Found", None, 0
+    path_and_query = parts[1].split("?", 1)
+    if path_and_query[0] != "/strike":
+        return "404 Not Found", None, 0
+    params = {}
+    if len(path_and_query) == 2:
+        for pair in path_and_query[1].split("&"):
+            if "=" in pair:
+                key, value = pair.split("=", 1)
+                params[key] = value
+    try:
+        servo = int(params["servo"])
+        times = int(params.get("times", "1"))
+    except (KeyError, ValueError):
+        return "400 Bad Request", None, 0
+    if servo not in SERVOS or not 1 <= times <= MAX_HTTP_TIMES:
+        return "400 Bad Request", None, 0
+    return "200 OK", servo, times
+
+
+def start_http_server() -> socket.socket:
+    server = socket.socket()
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind(("0.0.0.0", HTTP_PORT))
+    server.listen(2)
+    server.setblocking(False)  # accept() returns at once when nobody is calling
+    return server
+
+
+def handle_http(server: socket.socket) -> None:
+    """Answer one pending HTTP call, if any, then strike the requested servo."""
+    try:
+        client, _ = server.accept()
+    except OSError:  # nobody is calling
+        return
+    servo, times = None, 0
+    try:
+        client.settimeout(2)
+        request_line = client.readline().decode()
+        # Read the headers too: closing with unread data would reset the connection.
+        for _ in range(30):
+            line = client.readline()
+            if not line or line == b"\r\n":
+                break
+        status, servo, times = parse_strike(request_line)
+        body = "ok" if servo else "usage: /strike?servo=N&times=K"
+        client.send(f"HTTP/1.0 {status}\r\nContent-Type: text/plain\r\n\r\n{body}\n".encode())
+    except Exception as e:
+        print("http error:", e)
+    finally:
+        client.close()  # before striking, so the caller gets its answer at once
+    if servo:
+        print("http strike", servo, times)
+        strike(SERVOS[servo], times)
+
+
+def wait_and_watch_inputs(seconds: int, server: socket.socket) -> None:
+    """Sleep for the given time, while watching the test button and HTTP calls.
+
+    A press on the button strikes all servos. An HTTP call strikes the servo
+    it asks for. Both are polled, not handled by an interrupt:
     an interrupt handler must not sleep, and the strike needs to.
     """
     deadline = time.ticks_add(time.ticks_ms(), seconds * 1000)
     while time.ticks_diff(deadline, time.ticks_ms()) > 0:
+        handle_http(server)
         if test_button.value() == 0:
             print("test strike")
             time.sleep(TEST_DELAY)
@@ -189,6 +263,7 @@ set_angle(servo2, REST_ANGLE)
 time.sleep(1)
 
 wlan = wifi.connect()
+server = start_http_server()
 seen_supernovae = None
 seen_gravitational_waves = None
 # seen_earthquakes = None
@@ -201,4 +276,4 @@ while True:
         "gravitational wave", fetch_gravitational_waves, seen_gravitational_waves, servo2
     )
     # seen_earthquakes = check("earthquake", fetch_earthquakes, seen_earthquakes, servo3)
-    wait_and_watch_button(CHECK_INTERVAL)
+    wait_and_watch_inputs(CHECK_INTERVAL, server)

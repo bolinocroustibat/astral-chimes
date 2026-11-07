@@ -54,6 +54,19 @@ Only one program can use the serial port at a time: quit the REPL (and Thonny) b
 
 Press the BOOT button (GPIO 0, next to the USB port) to strike all servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
 
+## Ring over HTTP
+
+From any device on the local network, call `/strike` with the servo number (1 = supernova, 2 = gravitational wave) and, optionally, the number of strikes (1 to 5):
+
+```bash
+curl "http://astral-chimes.local/strike?servo=1"
+curl "http://astral-chimes.local/strike?servo=2&times=3"
+```
+
+If `astral-chimes.local` does not resolve, use the IP address printed by `wifi ok` at boot, and reserve it in the router so it does not change.
+
+Calls are answered between two checks of the catalogs: during a check or a strike, they wait a few seconds. There is no authentication, so anyone on the local network can ring.
+
 ## TODO
 
 Ring a third chime for another kind of event from TNS. Ideas, with rough orders of magnitude (not checked against TNS):
