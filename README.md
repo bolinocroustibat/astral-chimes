@@ -1,10 +1,12 @@
 # Astral Chimes
 
-Ring a chime for each new confirmed supernova explosion in the universe, and a second one for each new gravitational wave event. MicroPython project for ESP32 chip. Supernovae come from the [Transient Name Server](https://www.wis-tns.org/), gravitational waves from [GraceDB](https://gracedb.ligo.org/) (LIGO/Virgo/KAGRA).
+Ring a chime for each new confirmed supernova explosion in the universe, a second one for each new gravitational wave event, and a third one for each earthquake in Japan. MicroPython project for ESP32 chip. Supernovae come from the [Transient Name Server](https://www.wis-tns.org/), gravitational waves from [GraceDB](https://gracedb.ligo.org/) (LIGO/Virgo/KAGRA), earthquakes from the [USGS](https://earthquake.usgs.gov/).
 
 Only significant, non-retracted gravitational wave alerts ring. There are about 1 to 3 per week while the detectors are observing, and none between observing runs.
 
-Both catalogs are checked every 5 minutes. The first check after boot only memorizes the current lists, so nothing rings until a new event is published.
+Earthquakes ring from magnitude 4, about 2 per day. The USGS lists no smaller ones in Japan, and publishes them with some delay (often 15 to 30 minutes): this is a chime, not an early warning.
+
+All catalogs are checked every 5 minutes. The first check after boot only memorizes the current lists, so nothing rings until a new event is published.
 
 ## Flash the firmware
 
@@ -26,7 +28,7 @@ SSID = "your-network"
 PASSWORD = "your-password"
 ```
 
-Connect the supernova servo signal wire to GPIO 13 and the gravitational wave servo to GPIO 27. Power the servos from a separate supply sharing a common ground with the board, as their current peaks can reset the ESP32.
+Connect the supernova servo signal wire to GPIO 13, the gravitational wave servo to GPIO 27 and the earthquake servo to GPIO 26. Power the servos from a separate supply sharing a common ground with the board, as their current peaks can reset the ESP32. If they share the board's VIN pin instead, put a capacitor of 1000 µF or more (at least 10 V) between VIN and GND, close to the servos, minding its polarity.
 
 Then copy `main.py`, `wifi.py` and `secrets.py` to the board with [Thonny](https://thonny.org/) (select the MicroPython ESP32 interpreter, then upload from the Files view), or with `mpremote`:
 
@@ -50,7 +52,7 @@ Only one program can use the serial port at a time: quit the REPL (and Thonny) b
 
 ## Test strike
 
-Press the BOOT button (GPIO 0, next to the USB port) to strike both servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
+Press the BOOT button (GPIO 0, next to the USB port) to strike all three servos, one after the other. It works at any time between two checks of the catalogs. Do not hold it while the board boots or resets: the chip would start in flashing mode instead of running `main.py`.
 
 ## TODO
 

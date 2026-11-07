@@ -25,10 +25,19 @@ GRAVITATIONAL_WAVE_URL = (
     "https://gracedb.ligo.org/api/superevents/?count=5"
     "&query=category%3A+Production+SIGNIF_LOCKED+%26+~ADVNO"
 )
+# Earthquakes in and around Japan, from the USGS catalog, which lists none
+# below M4 there. The box also catches rare quakes off Taiwan, Korea and Sakhalin.
+EARTHQUAKE_MIN_MAGNITUDE = 4
+EARTHQUAKE_URL = (
+    "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson"
+    "&minlatitude=24&maxlatitude=46&minlongitude=122&maxlongitude=146"
+    f"&minmagnitude={EARTHQUAKE_MIN_MAGNITUDE}&limit=5&orderby=time"
+)
 HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
 
 servo1 = PWM(Pin(13), freq=50)
 servo2 = PWM(Pin(27), freq=50)
+servo3 = PWM(Pin(26), freq=50)
 test_button = Pin(0, Pin.IN, Pin.PULL_UP)  # BOOT button, reads 0 when pressed
 
 
@@ -46,10 +55,10 @@ def strike(servo: PWM, times: int = 1) -> None:
 
 
 def wait_and_watch_button(seconds: int) -> None:
-    """Sleep for the given time, striking both servos when the test button is pressed.
+    """Sleep for the given time, striking all servos when the test button is pressed.
 
-    The button is polled, not handled by an interrupt: an interrupt handler
-    must not sleep, and the strike needs to.
+    The button is polled, not handled by an interrupt:
+    an interrupt handler must not sleep, and the strike needs to.
     """
     deadline = time.ticks_add(time.ticks_ms(), seconds * 1000)
     while time.ticks_diff(deadline, time.ticks_ms()) > 0:
@@ -59,6 +68,8 @@ def wait_and_watch_button(seconds: int) -> None:
             strike(servo1)
             time.sleep(TEST_GAP)
             strike(servo2)
+            time.sleep(TEST_GAP)
+            strike(servo3)
         time.sleep_ms(50)
 
 
@@ -114,6 +125,20 @@ def fetch_gravitational_waves() -> list[str]:
         r.close()
 
 
+def fetch_earthquakes() -> list[str]:
+    """Return the ids of the latest earthquakes in Japan, newest first."""
+    r = urequests.get(EARTHQUAKE_URL, headers=HEADERS)
+    try:
+        if r.status_code != 200:
+            raise ValueError(f"http {r.status_code}")
+        data = json.load(r.raw)  # parsed from the stream, the raw text is never kept
+        if "features" not in data:
+            raise ValueError("unexpected response")
+        return [feature["id"] for feature in data["features"]]
+    finally:
+        r.close()
+
+
 def find_new(names: list[str], seen: list[str] | None) -> list[str]:
     """Return the names that should ring.
 
@@ -158,11 +183,13 @@ def check(label: str, fetch, seen: list[str] | None, servo: PWM) -> list[str] | 
 
 set_angle(servo1, REST_ANGLE)
 set_angle(servo2, REST_ANGLE)
+set_angle(servo3, REST_ANGLE)
 time.sleep(1)
 
 wlan = wifi.connect()
 seen_supernovae = None
 seen_gravitational_waves = None
+seen_earthquakes = None
 
 while True:
     if not wlan.isconnected():
@@ -171,4 +198,5 @@ while True:
     seen_gravitational_waves = check(
         "gravitational wave", fetch_gravitational_waves, seen_gravitational_waves, servo2
     )
+    seen_earthquakes = check("earthquake", fetch_earthquakes, seen_earthquakes, servo3)
     wait_and_watch_button(CHECK_INTERVAL)
