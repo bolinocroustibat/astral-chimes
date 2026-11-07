@@ -7,8 +7,8 @@ STRIKE_ANGLE = 180
 PAUSE = 0.3  # seconds: time spent at the strike position
 # The strike stays fast so the chime rings well, but the way back is slow:
 # a sudden return is what makes the servo loud.
-RETURN_DURATION = 0.6  # seconds to go back to rest
-RETURN_STEPS = 30  # one step every 20 ms, the period of the servo signal
+RETURN_DURATION = 1.5  # seconds to go back to rest
+STEP_MS = 20  # one step per period of the servo signal, finer would be useless
 STRIKE_GAP = 3  # seconds after each strike, long enough to count them by ear
 
 servo1 = PWM(Pin(13), freq=50)  # supernovae
@@ -28,10 +28,10 @@ def set_angle(servo: PWM, angle: float) -> None:
 
 def move_slowly(servo: PWM, start: int, end: int) -> None:
     """Go from one angle to another in small steps, over RETURN_DURATION."""
-    step_ms = int(RETURN_DURATION * 1000 / RETURN_STEPS)
-    for step in range(1, RETURN_STEPS + 1):
-        set_angle(servo, start + (end - start) * step / RETURN_STEPS)
-        time.sleep_ms(step_ms)
+    steps = max(1, int(RETURN_DURATION * 1000 / STEP_MS))
+    for step in range(1, steps + 1):
+        set_angle(servo, start + (end - start) * step / steps)
+        time.sleep_ms(STEP_MS)
 
 
 def strike(servo: PWM, times: int = 1) -> None:
