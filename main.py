@@ -1,3 +1,5 @@
+import gc
+import json
 import time
 
 import urequests
@@ -11,11 +13,17 @@ PAUSE = 0.3  # seconds: time spent at the strike position
 STRIKE_GAP = 3  # seconds after each strike, long enough to count them by ear
 TEST_GAP = 5  # extra seconds between the two servos on a test strike
 TEST_DELAY = 2  # seconds between the button press and the first test strike
-CHECK_INTERVAL = 300  # seconds between two checks of the TNS catalog
+CHECK_INTERVAL = 300  # seconds between two checks of the catalogs
 MAX_SEEN = 40  # names remembered, must stay above the page size of the URL
-URL = (
+SUPERNOVA_URL = (
     "https://www.wis-tns.org/search?format=csv&num_page=20&classified_sne=1"
     "&discovered_period_value=30&discovered_period_units=days"
+)
+# Significant public alerts only (SIGNIF_LOCKED), not retracted ones (ADVNO).
+# Each event weighs about 3 KB of JSON, so the page stays small.
+GRAVITATIONAL_WAVE_URL = (
+    "https://gracedb.ligo.org/api/superevents/?count=5"
+    "&query=category%3A+Production+SIGNIF_LOCKED+%26+~ADVNO"
 )
 HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
 
@@ -72,9 +80,9 @@ def read_lines(stream):
         yield buffer
 
 
-def fetch_names() -> list[str]:
+def fetch_supernovae() -> list[str]:
     """Return the names of the latest confirmed supernovae, newest first."""
-    r = urequests.get(URL, headers=HEADERS)
+    r = urequests.get(SUPERNOVA_URL, headers=HEADERS)
     try:
         if r.status_code != 200:
             raise ValueError(f"http {r.status_code}")
@@ -92,13 +100,27 @@ def fetch_names() -> list[str]:
         r.close()
 
 
+def fetch_gravitational_waves() -> list[str]:
+    """Return the ids of the latest significant gravitational wave events, newest first."""
+    r = urequests.get(GRAVITATIONAL_WAVE_URL, headers=HEADERS)
+    try:
+        if r.status_code != 200:
+            raise ValueError(f"http {r.status_code}")
+        data = json.load(r.raw)  # parsed from the stream, the raw text is never kept
+        if "superevents" not in data:
+            raise ValueError("unexpected response")
+        return [event["superevent_id"] for event in data["superevents"]]
+    finally:
+        r.close()
+
+
 def find_new(names: list[str], seen: list[str] | None) -> list[str]:
     """Return the names that should ring.
 
     The first pass (seen is None) rings nothing: it only sets the reference.
 
     A list made only of unknown names rings nothing either. It points to an
-    anomaly, like a changed CSV format, and not to real supernovae: without
+    anomaly, like a changed response format, and not to real events: without
     this guard, a list that keeps changing could ring at every check, forever.
     """
     if seen is None:
@@ -116,26 +138,37 @@ def remember(names: list[str], seen: list[str] | None) -> list[str]:
     return (names + older)[:MAX_SEEN]
 
 
+def check(label: str, fetch, seen: list[str] | None, servo: PWM) -> list[str] | None:
+    """Fetch the latest events, strike once per new one, return the updated seen list."""
+    try:
+        gc.collect()  # the TLS handshake needs a large block of free memory
+        names = fetch()
+        print(label, "names:", len(names))
+        if not names:  # an empty answer must not replace the reference
+            return seen
+        new = find_new(names, seen)
+        seen = remember(names, seen)  # before ringing, so nothing rings twice
+        for name in new:
+            print(label, "new:", name)
+            strike(servo)
+    except Exception as e:
+        print(label, "error:", e)
+    return seen
+
+
 set_angle(servo1, REST_ANGLE)
 set_angle(servo2, REST_ANGLE)
 time.sleep(1)
 
 wlan = wifi.connect()
-seen = None
+seen_supernovae = None
+seen_gravitational_waves = None
 
 while True:
     if not wlan.isconnected():
         wlan = wifi.connect()
-    try:
-        names = fetch_names()
-        print("names:", len(names))
-        if names:  # an empty answer must not replace the reference
-            new = find_new(names, seen)
-            seen = remember(names, seen)  # before ringing, so nothing rings twice
-
-            for name in new:
-                print("supernova:", name)
-                strike(servo1)
-    except Exception as e:
-        print("error:", e)
+    seen_supernovae = check("supernova", fetch_supernovae, seen_supernovae, servo1)
+    seen_gravitational_waves = check(
+        "gravitational wave", fetch_gravitational_waves, seen_gravitational_waves, servo2
+    )
     wait_and_watch_button(CHECK_INTERVAL)
