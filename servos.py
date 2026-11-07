@@ -5,6 +5,10 @@ from machine import PWM, Pin
 REST_ANGLE = 0
 STRIKE_ANGLE = 180
 PAUSE = 0.3  # seconds: time spent at the strike position
+# The strike stays fast so the chime rings well, but the way back is slow:
+# a sudden return is what makes the servo loud.
+RETURN_DURATION = 0.6  # seconds to go back to rest
+RETURN_STEPS = 30  # one step every 20 ms, the period of the servo signal
 STRIKE_GAP = 3  # seconds after each strike, long enough to count them by ear
 
 servo1 = PWM(Pin(13), freq=50)  # supernovae
@@ -17,14 +21,22 @@ SERVOS = {  # numbers used by the HTTP call
 }
 
 
-def set_angle(servo: PWM, angle: int) -> None:
+def set_angle(servo: PWM, angle: float) -> None:
     us = 500 + (angle / 180) * 1900  # 0 deg = 500 us, 180 deg = 2400 us
     servo.duty_ns(int(us * 1000))
+
+
+def move_slowly(servo: PWM, start: int, end: int) -> None:
+    """Go from one angle to another in small steps, over RETURN_DURATION."""
+    step_ms = int(RETURN_DURATION * 1000 / RETURN_STEPS)
+    for step in range(1, RETURN_STEPS + 1):
+        set_angle(servo, start + (end - start) * step / RETURN_STEPS)
+        time.sleep_ms(step_ms)
 
 
 def strike(servo: PWM, times: int = 1) -> None:
     for _ in range(times):
         set_angle(servo, STRIKE_ANGLE)
         time.sleep(PAUSE)
-        set_angle(servo, REST_ANGLE)
+        move_slowly(servo, STRIKE_ANGLE, REST_ANGLE)
         time.sleep(STRIKE_GAP)
