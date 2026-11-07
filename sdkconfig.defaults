@@ -1,0 +1,7 @@
+# The TLS handshake needs a large stack
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=20000
+# Name given to the router by DHCP (mDNS uses the one set in src/wifi.rs)
+CONFIG_LWIP_LOCAL_HOSTNAME="astral-chimes"
+# Root certificates, to check the catalogs' HTTPS
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE=y
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y

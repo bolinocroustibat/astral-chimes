@@ -1,13 +1,14 @@
 # Secrets
+/src/secrets.rs
+# The MicroPython version's, kept for the main branch
 secrets.py
 
-# Python / MicroPython
+# Rust / ESP-IDF
+/target
+/.embuild
+
+# Python leftovers from the main branch
 __pycache__/
-*.pyc
-*.mpy
 
 # macOS
 .DS_Store
-
-# Ruff
-.ruff_cache/

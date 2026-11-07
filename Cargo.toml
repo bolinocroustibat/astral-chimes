@@ -1,0 +1,31 @@
+[package]
+name = "astral-chimes"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+
+[[bin]]
+name = "astral-chimes"
+harness = false # no test harness on the board, see src/logic.rs for the tests
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true    # symbols are nice and they don't increase the size on flash
+opt-level = "z"
+
+[dependencies]
+anyhow = "1"
+embedded-svc = "0.28"
+esp-idf-svc = "0.51"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+embuild = "0.33"
+
+# mDNS, so that the board answers at astral-chimes.local
+[[package.metadata.esp-idf-sys.extra_components]]
+remote_component = { name = "espressif/mdns", version = "1.2" }

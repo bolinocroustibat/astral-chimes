@@ -1,0 +1,2 @@
+[toolchain]
+channel = "esp" # installed by espup, the ESP32 is an Xtensa chip
