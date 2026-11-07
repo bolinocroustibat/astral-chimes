@@ -4,7 +4,7 @@ Ring a chime for each new confirmed supernova explosion in the universe, a secon
 
 Only significant, non-retracted gravitational wave alerts ring. There are about 1 to 3 per week while the detectors are observing, and none between observing runs.
 
-The earthquake chime is disabled for now (its lines are commented out in `main.py`). Once enabled, earthquakes ring from magnitude 4, about 2 per day. The USGS lists no smaller ones in Japan, and publishes them with some delay (often 15 to 30 minutes): this is a chime, not an early warning.
+The earthquake chime is disabled for now (its lines are commented out in `main.py` and `servos.py`). Once enabled, earthquakes ring from magnitude 4, about 2 per day. The USGS lists no smaller ones in Japan, and publishes them with some delay (often 15 to 30 minutes): this is a chime, not an early warning.
 
 All catalogs are checked every 5 minutes. The first check after boot only memorizes the current lists, so nothing rings until a new event is published.
 
@@ -30,10 +30,10 @@ PASSWORD = "your-password"
 
 Connect the supernova servo signal wire to GPIO 13, the gravitational wave servo to GPIO 27 and the earthquake servo to GPIO 26. Power the servos from a separate supply sharing a common ground with the board, as their current peaks can reset the ESP32. If they share the board's VIN pin instead, put a capacitor of 1000 µF or more (at least 10 V) between VIN and GND, close to the servos, minding its polarity.
 
-Then copy `main.py`, `wifi.py` and `secrets.py` to the board with [Thonny](https://thonny.org/) (select the MicroPython ESP32 interpreter, then upload from the Files view), or with `mpremote`:
+Then copy the `.py` files to the board with [Thonny](https://thonny.org/) (select the MicroPython ESP32 interpreter, then upload from the Files view), or with `mpremote`:
 
 ```bash
-mpremote cp main.py wifi.py secrets.py :
+mpremote cp *.py :
 ```
 
 Copying stops the running program. Restart the board so the new `main.py` runs:
@@ -77,10 +77,10 @@ Ring a third chime for another kind of event from TNS. Ideas, with rough orders 
 - **Novae**: a few dozen per year.
 - **Kilonovae**: only one observed for sure (2017), so it would almost never ring.
 
-This needs another URL, servo and `seen` list. `check`, `find_new` and `remember` can be reused as they are.
+This needs a module with its own URL and `fetch` function, plus a servo and a `seen` list. `check`, `find_new` and `remember` can be reused as they are.
 
 Other sources, beyond TNS (to check before use):
 
 - **[NOAA SWPC](https://services.swpc.noaa.gov/)**: space weather in JSON, with no key, such as solar flares and geomagnetic storms (Kp index). A storm can mean visible aurorae. The frequency follows the solar cycle.
 
-It returns JSON, like GraceDB, so `fetch_gravitational_waves` is a good model for its own `fetch` function.
+It returns JSON, like GraceDB, so `gravitational_waves.py` is a good model for its module.

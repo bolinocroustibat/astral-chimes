@@ -5,6 +5,8 @@ import network
 
 
 HOSTNAME = "astral-chimes"  # the board answers at astral-chimes.local
+# Sent with every request to the catalogs, so they know who is calling.
+HEADERS = {"User-Agent": "astral-chimes/0.1 (personal project)"}
 
 
 def connect(timeout: int = 20) -> network.WLAN:
